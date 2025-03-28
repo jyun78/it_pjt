@@ -59,10 +59,7 @@ def quatMultiply(quatA, quatB):
 
 ## rdb파일 읽고, center of mass 계산
 ## input: file_path(str), output: ceter of mass(tuple: (x,y,z))
-def calculate_center_of_mass(file_path):
-
-    pdb_atoms = read_pdb(file_path)
-
+def calculate_center_of_mass(pdb_atoms):
     if not pdb_atoms:
         print("No atoms found in the PDB file.")
         return None
@@ -76,35 +73,26 @@ def calculate_center_of_mass(file_path):
     center_x = np.mean(x_coords)
     center_y = np.mean(y_coords)
     center_z = np.mean(z_coords)
-
     return center_x, center_y, center_z
 
-## pdb파일 읽고, 회전한 좌표 주기
-def rotate_pdb(file_path, rotation_axis, rotation_angle, custom_center=None):
-
-    pdb_atoms = read_pdb(file_path)
-    if not pdb_atoms:
-        print("No atoms found in the PDB file.")
-        return None
-
-    original_center_x, original_center_y, original_center_z = calculate_center_of_mass(file_path)
+def rotate_pdb(pdb_atoms, rotation_axis, rotation_angle, custom_center=None):
+    original_center_x, original_center_y, original_center_z = calculate_center_of_mass(pdb_atoms)
     original_center = np.array([original_center_x, original_center_y, original_center_z])
+
+    # Define atom_coords regardless of custom_center
+    atom_coords = np.array([[atom['x'], atom['y'], atom['z']] for atom in pdb_atoms])
 
     if custom_center is None:
         center = original_center
     else:
         center = np.array(custom_center)
         translation = center - original_center
-    
-        atom_coords = np.array([[atom['x'], atom['y'], atom['z']] for atom in pdb_atoms])
         atom_coords += translation  
-    
-    centered_coords = atom_coords - center
 
+    centered_coords = atom_coords - center
     quat = getQuaternion(rotation_axis, rotation_angle)
     rotated_coords = rotateFrame(quat, centered_coords)
     final_coords = rotated_coords + center
-
     rot_atoms = update_pdb_atoms(pdb_atoms, final_coords)
-
+    
     return rot_atoms
